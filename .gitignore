@@ -1,0 +1,26 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Output/Generated
+result.txt
+dist/
+build/
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+result.txt
