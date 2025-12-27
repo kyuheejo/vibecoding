@@ -279,8 +279,13 @@ const GameScene: React.FC = () => {
                             enterHoldIntervalRef.current = null;
                         }
 
-                        // Only trigger game over for villain (good guy win is handled by collision detection)
-                        if (!isGoodGuyVisibleRef.current) {
+                        if (isGoodGuyVisibleRef.current) {
+                            // Win if progress completes before collision
+                            if (!goodGuyCollisionProcessed.current) {
+                                triggerWin();
+                            }
+                        } else {
+                            // Game over if villain is visible
                             setIsGameOver(true);
                         }
                     }
