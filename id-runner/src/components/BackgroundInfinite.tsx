@@ -13,7 +13,7 @@ const BackgroundInfinite: React.FC<BackgroundProps> = ({ isGameOver }) => {
         if (isGameOver) return;
 
         let animationFrameId: number;
-        const speed = 0.2; // ~4 seconds per cycle at 60fps
+        const speed = 0.35; // Faster scroll for increased difficulty
 
         const animate = () => {
             positionRef.current -= speed;
