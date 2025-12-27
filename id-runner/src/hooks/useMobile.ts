@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 
 export const useMobile = () => {
     const [isMobile, setIsMobile] = useState(false);
-    const [screenHeight, setScreenHeight] = useState(window.innerHeight);
 
     useEffect(() => {
         const checkMobile = () => {
@@ -10,7 +9,6 @@ export const useMobile = () => {
             const isMobileDevice = window.innerWidth < 900 ||
                 /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             setIsMobile(isMobileDevice);
-            setScreenHeight(window.innerHeight);
         };
 
         checkMobile();

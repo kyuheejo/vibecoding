@@ -40,7 +40,6 @@ const heartFrames: string[] = [
 
 // 기본 위치 (desktop)
 const BASE_LEFT = 50;
-const BASE_BOTTOM = 200;
 const WIDTH = 300;
 
 interface RunnerProps {

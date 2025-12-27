@@ -30,6 +30,7 @@ const GameScene: React.FC = () => {
     const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
     const [resetKey, setResetKey] = useState(0); // Key to force re-mount on restart
     const [villainIndex, setVillainIndex] = useState(0); // Track current villain
+    const [showTooLate, setShowTooLate] = useState(false); // "Too late!" message
     const playlist = [bgm1, bgm2];
 
     // Map villain index to ending text
@@ -61,6 +62,10 @@ const GameScene: React.FC = () => {
     const touchHoldTimeout = useRef<number | null>(null);
     const triggerJumpRef = useRef<() => void>(() => { });
 
+    // Audio refs for cleanup on restart
+    const gameOverSoundRef = useRef<HTMLAudioElement | null>(null);
+    const gameOverMusicRef = useRef<HTMLAudioElement | null>(null);
+
     // Prevent Space key from scrolling at all times
     useEffect(() => {
         const preventScroll = (e: KeyboardEvent) => {
@@ -78,13 +83,15 @@ const GameScene: React.FC = () => {
             // Play sound immediately
             const sound = new Audio(gameOverSound);
             sound.volume = 0.8;
+            gameOverSoundRef.current = sound;
             sound.play().catch(e => console.log("Game over sound blocked", e));
 
             // Play music after 3 seconds
             const timer = setTimeout(() => {
                 const music = new Audio(gameOverMusic);
                 music.volume = 0.6;
-                music.loop = false; // Play only once
+                music.loop = false;
+                gameOverMusicRef.current = music;
                 music.play().catch(e => console.log("Game over music blocked", e));
             }, 3000);
 
@@ -159,10 +166,21 @@ const GameScene: React.FC = () => {
         }, 1000);
 
         const doRestart = () => {
+            // Stop game over sounds
+            if (gameOverSoundRef.current) {
+                gameOverSoundRef.current.pause();
+                gameOverSoundRef.current = null;
+            }
+            if (gameOverMusicRef.current) {
+                gameOverMusicRef.current.pause();
+                gameOverMusicRef.current = null;
+            }
+
             setIsGameOver(false);
             setIsWin(false);
             setIsGoodGuyVisible(false);
             setEnterHoldProgress(0);
+            setShowTooLate(false);
             setResetKey(prev => prev + 1); // Force re-mount
             setVillainIndex(0); // Reset villain
 
@@ -228,8 +246,15 @@ const GameScene: React.FC = () => {
                     goodGuyCollisionProcessed.current = true;
                     if (enterHoldProgressRef.current >= 100) {
                         triggerWin();
+                    } else {
+                        // Show "Too late!" message for 3 seconds
+                        setEnterHoldProgress(0);
+                        enterHoldProgressRef.current = 0;
+                        setShowTooLate(true);
+                        setTimeout(() => {
+                            setShowTooLate(false);
+                        }, 1000);
                     }
-                    // If progress < 100, do nothing - game continues
                 }
             } else {
                 // Check villain collision
@@ -285,7 +310,7 @@ const GameScene: React.FC = () => {
                 // Update progress every 50ms
                 enterHoldIntervalRef.current = window.setInterval(() => {
                     const elapsed = Date.now() - (enterHoldStartTime.current || 0);
-                    const progress = Math.min((elapsed / 3000) * 100, 100);
+                    const progress = Math.min((elapsed / 3500) * 100, 100);
                     setEnterHoldProgress(progress);
                     enterHoldProgressRef.current = progress; // Sync ref for collision detection
 
@@ -494,7 +519,7 @@ const GameScene: React.FC = () => {
             />
 
             {/* Enter Hold Progress Bar */}
-            {enterHoldProgress > 0 && !isWin && !isGameOver && (
+            {enterHoldProgress > 0 && !isWin && !isGameOver && !showTooLate && (
                 <div style={{
                     position: 'fixed',
                     top: '10px',
@@ -523,7 +548,31 @@ const GameScene: React.FC = () => {
                         fontSize: isMobile ? '10px' : '24px',
                         lineHeight: isMobile ? '20px' : '40px'
                     }}>
-                        {isMobile ? '1초간 누르세요! ❤️' : 'Enter 를 눌러 너나자를 쏘세요! ❤️'}
+                        {isMobile ? '1초간 누르세요! ❤️' : '3초간 Enter 를 눌러 너나자를 쏘세요! ❤️'}
+                    </span>
+                </div>
+            )}
+
+            {/* "Too late!" Message */}
+            {showTooLate && !isWin && !isGameOver && (
+                <div style={{
+                    position: 'fixed',
+                    top: '10px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    padding: isMobile ? '8px 20px' : '15px 40px',
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    borderRadius: '10px',
+                    zIndex: 1000,
+                    border: isMobile ? '2px solid #ff6b6b' : '3px solid #ff6b6b'
+                }}>
+                    <span style={{
+                        color: '#ff6b6b',
+                        fontSize: isMobile ? '10px' : '24px',
+                        fontWeight: 'bold',
+                        textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+                    }}>
+                        망설이는 사이 좋남을 놓쳤어요! 💔
                     </span>
                 </div>
             )}
