@@ -51,6 +51,8 @@ const GameScene: React.FC = () => {
     const enterHoldStartTime = useRef<number | null>(null);
     const enterHoldIntervalRef = useRef<number | null>(null);
     const isGoodGuyVisibleRef = useRef(false);
+    const enterHoldProgressRef = useRef(0); // Track progress for collision check
+    const goodGuyCollisionProcessed = useRef(false); // Track if we already checked collision
 
     // Prevent Space key from scrolling at all times
     useEffect(() => {
@@ -177,20 +179,40 @@ const GameScene: React.FC = () => {
         };
     }, [isGameOver, isWin]);
 
-    // Collision Detection Loop (only check villain collision when good guy not visible)
+    // Collision Detection Loop
     useEffect(() => {
         if (isGameOver || isWin) return;
 
         let animationFrameId: number;
 
         const checkCollision = () => {
-            // Skip collision check when good guy is visible
-            if (!isGoodGuyVisible) {
-                // Hitbox definitions (tuned for gameplay feel)
-                const runnerLeft = 50 + 80; // Offset to center
-                const runnerRight = 50 + 300 - 80;
-                const runnerBottom = 200 + runnerY.current;
+            // Hitbox definitions (tuned for gameplay feel)
+            const runnerLeft = 50 + 80; // Offset to center
+            const runnerRight = 50 + 300 - 80;
+            const runnerBottom = 200 + runnerY.current;
 
+            if (isGoodGuyVisible) {
+                // Check good guy collision
+                const goodGuyLeft = goodGuyX.current + 80;
+                const goodGuyRight = goodGuyX.current + 300 - 80;
+                const goodGuyTop = 170 + 200;
+
+                // Check overlap with good guy
+                if (
+                    !goodGuyCollisionProcessed.current &&
+                    runnerRight > goodGuyLeft &&
+                    runnerLeft < goodGuyRight &&
+                    runnerBottom < goodGuyTop
+                ) {
+                    // Collision happened - check progress
+                    goodGuyCollisionProcessed.current = true;
+                    if (enterHoldProgressRef.current >= 100) {
+                        triggerWin();
+                    }
+                    // If progress < 100, do nothing - game continues
+                }
+            } else {
+                // Check villain collision
                 const villainLeft = villainX.current + 80;
                 const villainRight = villainX.current + 300 - 80;
                 const villainTop = 170 + 200; // Approx height
@@ -215,6 +237,10 @@ const GameScene: React.FC = () => {
     // Keep ref in sync with state for use in interval callback
     useEffect(() => {
         isGoodGuyVisibleRef.current = isGoodGuyVisible;
+        // Reset collision flag when good guy spawns
+        if (isGoodGuyVisible) {
+            goodGuyCollisionProcessed.current = false;
+        }
     }, [isGoodGuyVisible]);
 
     // Trigger win function
@@ -239,26 +265,22 @@ const GameScene: React.FC = () => {
                 // Update progress every 50ms
                 enterHoldIntervalRef.current = window.setInterval(() => {
                     const elapsed = Date.now() - (enterHoldStartTime.current || 0);
-                    const progress = Math.min((elapsed / 3500) * 100, 100);
+                    const progress = Math.min((elapsed / 3200) * 100, 100);
                     setEnterHoldProgress(progress);
+                    enterHoldProgressRef.current = progress; // Sync ref for collision detection
 
                     if (progress >= 100) {
                         // Clear interval first
                         enterHoldStartTime.current = null;
                         setEnterHoldProgress(0);
+                        enterHoldProgressRef.current = 0;
                         if (enterHoldIntervalRef.current) {
                             clearInterval(enterHoldIntervalRef.current);
                             enterHoldIntervalRef.current = null;
                         }
 
-                        if (isGoodGuyVisibleRef.current) {
-                            // Win only if good guy hasn't passed the runner yet
-                            if (goodGuyX.current > 0) {
-                                triggerWin();
-                            }
-                            // If good guy already passed, just do nothing - game continues
-                        } else {
-                            // Game over if villain is visible
+                        // Only trigger game over for villain (good guy win is handled by collision detection)
+                        if (!isGoodGuyVisibleRef.current) {
                             setIsGameOver(true);
                         }
                     }
@@ -270,6 +292,7 @@ const GameScene: React.FC = () => {
             if (e.key === "Enter") {
                 enterHoldStartTime.current = null;
                 setEnterHoldProgress(0);
+                enterHoldProgressRef.current = 0;
                 if (enterHoldIntervalRef.current) {
                     clearInterval(enterHoldIntervalRef.current);
                     enterHoldIntervalRef.current = null;
@@ -294,6 +317,7 @@ const GameScene: React.FC = () => {
         if (!isGoodGuyVisible) {
             enterHoldStartTime.current = null;
             setEnterHoldProgress(0);
+            enterHoldProgressRef.current = 0;
             if (enterHoldIntervalRef.current) {
                 clearInterval(enterHoldIntervalRef.current);
                 enterHoldIntervalRef.current = null;
