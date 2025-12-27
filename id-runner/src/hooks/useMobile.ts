@@ -19,10 +19,10 @@ export const useMobile = () => {
     }, []);
 
     // Scale factor: 1/3 for mobile
-    const scale = isMobile ? 0.33 : 1;
+    const scale = isMobile ? 0.45 : 1;
 
     // Bottom position: 1/3 of screen height on mobile, 200px on desktop
-    const baseBottom = isMobile ? Math.floor(screenHeight / 3) : 200;
+    const baseBottom = isMobile ? 180 : 200;
 
     return { isMobile, scale, baseBottom };
 };

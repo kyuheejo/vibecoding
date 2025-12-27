@@ -22,7 +22,7 @@ import ending6 from "../ending/6.txt?raw";
 import ending7 from "../ending/7.txt?raw";
 
 const GameScene: React.FC = () => {
-    const { scale, baseBottom } = useMobile();
+    const { isMobile, scale, baseBottom } = useMobile();
     const [isGameOver, setIsGameOver] = useState(false);
     const [isWin, setIsWin] = useState(false);
     const [isGoodGuyVisible, setIsGoodGuyVisible] = useState(false);
@@ -358,12 +358,12 @@ const GameScene: React.FC = () => {
             e.preventDefault();
             touchStartTime.current = Date.now();
 
-            // After 250ms, start the heart hold progress (like holding Enter)
+            // After 250ms, start the heart hold progress (1 second on mobile)
             touchHoldTimeout.current = window.setTimeout(() => {
                 enterHoldStartTime.current = Date.now();
                 enterHoldIntervalRef.current = window.setInterval(() => {
                     const elapsed = Date.now() - (enterHoldStartTime.current || 0);
-                    const progress = Math.min((elapsed / 3000) * 100, 100);
+                    const progress = Math.min((elapsed / 1000) * 100, 100);
                     setEnterHoldProgress(progress);
                     enterHoldProgressRef.current = progress;
 
@@ -497,16 +497,16 @@ const GameScene: React.FC = () => {
             {enterHoldProgress > 0 && !isWin && !isGameOver && (
                 <div style={{
                     position: 'fixed',
-                    top: '20px',
+                    top: '10px',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    width: '600px',
-                    height: '40px',
+                    width: isMobile ? '50%' : '600px',
+                    height: isMobile ? '20px' : '40px',
                     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    borderRadius: '20px',
+                    borderRadius: '10px',
                     overflow: 'hidden',
                     zIndex: 1000,
-                    border: '3px solid white'
+                    border: isMobile ? '2px solid white' : '3px solid white'
                 }}>
                     <div style={{
                         width: `${enterHoldProgress}%`,
@@ -520,10 +520,10 @@ const GameScene: React.FC = () => {
                         width: '100%',
                         textAlign: 'center',
                         color: 'white',
-                        fontSize: '24px',
-                        lineHeight: '40px'
+                        fontSize: isMobile ? '10px' : '24px',
+                        lineHeight: isMobile ? '20px' : '40px'
                     }}>
-                        Enter 를 눌러 너나자를 쏘세요! ❤️
+                        {isMobile ? '1초간 누르세요! ❤️' : 'Enter 를 눌러 너나자를 쏘세요! ❤️'}
                     </span>
                 </div>
             )}
@@ -542,29 +542,38 @@ const GameScene: React.FC = () => {
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        zIndex: 9999
+                        zIndex: 9999,
+                        padding: isMobile ? '10px' : '20px'
                     }}
                 >
                     <Confetti />
                     <img
                         src={winImg}
                         alt="You Win!"
-                        className="w-1/3 h-auto drop-shadow-2xl animate-float rounded-lg"
+                        className="drop-shadow-2xl animate-float rounded-lg"
+                        style={{ width: isMobile ? '50%' : '33%', height: 'auto' }}
                     />
                     <p
-                        className="text-white text-3xl mt-8 font-bold"
+                        className="font-bold"
                         style={{
                             color: '#ff1493',
-                            textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                            textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                            fontSize: isMobile ? '12px' : '1.875rem',
+                            marginTop: isMobile ? '10px' : '2rem',
+                            textAlign: 'center'
                         }}
                     >
                         김이드는 좋남과 결혼하여 평생 부양 받으며 살았답니다..❤️
                     </p>
                     <p
-                        className="text-white text-2xl mt-4 font-bold animate-pulse"
-                        style={{ color: 'white' }}
+                        className="font-bold animate-pulse"
+                        style={{
+                            color: 'white',
+                            fontSize: isMobile ? '10px' : '1.5rem',
+                            marginTop: isMobile ? '8px' : '1rem'
+                        }}
                     >
-                        Press Enter to Play Again
+                        {isMobile ? 'Tap to Play Again' : 'Press Enter to Play Again'}
                     </p>
                 </div>
             )}
@@ -583,36 +592,46 @@ const GameScene: React.FC = () => {
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        zIndex: 9999
+                        zIndex: 9999,
+                        padding: isMobile ? '10px' : '20px'
                     }}
                 >
                     <img
                         src={gameOverImg}
                         alt="Game Over"
-                        className="w-1/5 h-auto drop-shadow-2xl animate-float"
+                        className="drop-shadow-2xl animate-float"
+                        style={{ width: isMobile ? '15%' : '20%', height: 'auto' }}
                     />
                     <p
-                        className="text-white text-2xl mt-8 font-bold animate-pulse"
-                        style={{ color: 'white' }}
+                        className="font-bold animate-pulse"
+                        style={{
+                            color: 'white',
+                            fontSize: isMobile ? '10px' : '1.5rem',
+                            marginTop: isMobile ? '8px' : '2rem'
+                        }}
                     >
-                        Press Enter to Restart
+                        {isMobile ? 'Tap to Restart' : 'Press Enter to Restart'}
                     </p>
                     {/* Ending Credit Text */}
                     <div
-                        className="mt-8 text-center"
-                        style={{ width: '60%', minHeight: '200px' }} // Added minHeight to prevent jumping
+                        className="text-center"
+                        style={{
+                            width: isMobile ? '90%' : '60%',
+                            minHeight: isMobile ? '80px' : '200px',
+                            marginTop: isMobile ? '8px' : '2rem'
+                        }}
                     >
                         {getCurrentParagraphLines().map((line, index) => (
                             line.trim() && (
                                 <p
-                                    key={`${paragraphIndex}-${index}`} // Unique key to trigger animation on change
+                                    key={`${paragraphIndex}-${index}`}
                                     className="text-white font-medium whitespace-pre-wrap leading-relaxed animate-fade-up"
                                     style={{
-                                        fontSize: '1.5rem',
-                                        lineHeight: '0.8',
+                                        fontSize: isMobile ? '10px' : '1.5rem',
+                                        lineHeight: isMobile ? '1.2' : '0.8',
                                         color: 'white',
-                                        marginBottom: '0.5rem',
-                                        animationDelay: `${index * 0.5}s` // Faster delay for lines
+                                        marginBottom: isMobile ? '4px' : '0.5rem',
+                                        animationDelay: `${index * 0.5}s`
                                     }}
                                 >
                                     {line}
@@ -620,8 +639,6 @@ const GameScene: React.FC = () => {
                             )
                         ))}
                     </div>
-
-
                 </div>
             )}
 
