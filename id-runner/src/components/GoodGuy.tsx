@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useMobile } from "../hooks/useMobile";
 
 // Import good guy frames
 import g1 from "../assets/good_guy/1.png";
@@ -20,6 +21,7 @@ interface GoodGuyProps {
 }
 
 const GoodGuy: React.FC<GoodGuyProps> = ({ isGameOver, isWin, isVisible, onPositionUpdate, onGoodGuyCycle }) => {
+    const { scale, baseBottom } = useMobile();
     const [x, setX] = useState(window.innerWidth);
     const [frameIndex, setFrameIndex] = useState(0);
 
@@ -66,8 +68,8 @@ const GoodGuy: React.FC<GoodGuyProps> = ({ isGameOver, isWin, isVisible, onPosit
             style={{
                 position: "absolute",
                 left: `${x}px`,
-                bottom: "170px",
-                width: "300px",
+                bottom: `${baseBottom - 30 * scale}px`,
+                width: `${300 * scale}px`,
                 height: "auto",
                 userSelect: "none",
                 pointerEvents: "none",
@@ -82,11 +84,11 @@ const GoodGuy: React.FC<GoodGuyProps> = ({ isGameOver, isWin, isVisible, onPosit
                 alt="Speech"
                 className="animate-float"
                 style={{
-                    width: "200px",
+                    width: `${200 * scale}px`,
                     height: "auto",
                     marginBottom: "-2px",
                     position: "relative",
-                    left: "-30px",
+                    left: `${-30 * scale}px`,
                     animationPlayState: (isGameOver || isWin) ? 'paused' : 'running'
                 }}
             />

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useMobile } from "../hooks/useMobile";
 
 // PNG 7장을 모두 import
 import frame0 from "../assets/run/run_1.png";
@@ -37,7 +38,7 @@ const heartFrames: string[] = [
     heart7, heart8, heart9, heart10, heart11,
 ];
 
-// 기본 위치
+// 기본 위치 (desktop)
 const BASE_LEFT = 50;
 const BASE_BOTTOM = 200;
 const WIDTH = 300;
@@ -50,6 +51,8 @@ interface RunnerProps {
 }
 
 const RunnerCharacter: React.FC<RunnerProps> = ({ isGameOver, isHoldingEnter, onPositionUpdate, onRegisterJump }) => {
+    const { scale, baseBottom } = useMobile();
+
     // 점프 상태
     const [isJumping, setIsJumping] = useState(false);
     const [y, setY] = useState(0);
@@ -170,9 +173,9 @@ const RunnerCharacter: React.FC<RunnerProps> = ({ isGameOver, isHoldingEnter, on
             alt="runner"
             style={{
                 position: "absolute",
-                left: `${BASE_LEFT}px`,
-                bottom: `${BASE_BOTTOM + y}px`,
-                width: `${WIDTH}px`,
+                left: `${BASE_LEFT * scale}px`,
+                bottom: `${baseBottom + y * scale}px`,
+                width: `${WIDTH * scale}px`,
                 height: "auto",
                 userSelect: "none",
                 pointerEvents: "none",

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useMobile } from "../hooks/useMobile";
 import RunnerCharacter from "./RunnerCharacter";
 import BackgroundInfinite from "./BackgroundInfinite";
 import Villain from "./Villain";
@@ -21,6 +22,7 @@ import ending6 from "../ending/6.txt?raw";
 import ending7 from "../ending/7.txt?raw";
 
 const GameScene: React.FC = () => {
+    const { scale, baseBottom } = useMobile();
     const [isGameOver, setIsGameOver] = useState(false);
     const [isWin, setIsWin] = useState(false);
     const [isGoodGuyVisible, setIsGoodGuyVisible] = useState(false);
@@ -57,7 +59,7 @@ const GameScene: React.FC = () => {
     // Touch handling refs
     const touchStartTime = useRef<number | null>(null);
     const touchHoldTimeout = useRef<number | null>(null);
-    const triggerJumpRef = useRef<() => void>(() => {});
+    const triggerJumpRef = useRef<() => void>(() => { });
 
     // Prevent Space key from scrolling at all times
     useEffect(() => {
@@ -204,16 +206,16 @@ const GameScene: React.FC = () => {
         let animationFrameId: number;
 
         const checkCollision = () => {
-            // Hitbox definitions (tuned for gameplay feel)
-            const runnerLeft = 50 + 80; // Offset to center
-            const runnerRight = 50 + 300 - 80;
-            const runnerBottom = 200 + runnerY.current;
+            // Hitbox definitions (scaled for mobile)
+            const runnerLeft = (50 + 80) * scale;
+            const runnerRight = (50 + 300 - 80) * scale;
+            const runnerBottom = baseBottom + runnerY.current * scale;
 
             if (isGoodGuyVisible) {
                 // Check good guy collision
-                const goodGuyLeft = goodGuyX.current + 80;
-                const goodGuyRight = goodGuyX.current + 300 - 80;
-                const goodGuyTop = 170 + 200;
+                const goodGuyLeft = goodGuyX.current + 80 * scale;
+                const goodGuyRight = goodGuyX.current + (300 - 80) * scale;
+                const goodGuyTop = baseBottom - 30 * scale + 200 * scale;
 
                 // Check overlap with good guy
                 if (
@@ -231,9 +233,9 @@ const GameScene: React.FC = () => {
                 }
             } else {
                 // Check villain collision
-                const villainLeft = villainX.current + 80;
-                const villainRight = villainX.current + 300 - 80;
-                const villainTop = 170 + 200; // Approx height
+                const villainLeft = villainX.current + 80 * scale;
+                const villainRight = villainX.current + (300 - 80) * scale;
+                const villainTop = baseBottom - 30 * scale + 200 * scale;
 
                 // Check overlap
                 if (
@@ -521,7 +523,7 @@ const GameScene: React.FC = () => {
                         fontSize: '24px',
                         lineHeight: '40px'
                     }}>
-                        Enter 를 눌러 3초간 너나자를 쏘세요! ❤️
+                        Enter 를 눌러 너나자를 쏘세요! ❤️
                     </span>
                 </div>
             )}

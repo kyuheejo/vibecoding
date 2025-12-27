@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useMobile } from "../hooks/useMobile";
 
 // Import villain frames
 import v1 from "../assets/villain/1.png";
@@ -31,6 +32,7 @@ interface VillainProps {
 }
 
 const Villain: React.FC<VillainProps> = ({ isGameOver, villainIndex, onPositionUpdate, onVillainCycle }) => {
+    const { scale, baseBottom } = useMobile();
     const [x, setX] = useState(window.innerWidth); // Start off-screen right
 
     // Refs for physics loop
@@ -66,8 +68,8 @@ const Villain: React.FC<VillainProps> = ({ isGameOver, villainIndex, onPositionU
             style={{
                 position: "absolute",
                 left: `${x}px`,
-                bottom: "170px", // Same baseline as runner
-                width: "300px",  // Match runner width
+                bottom: `${baseBottom - 30 * scale}px`,
+                width: `${300 * scale}px`,
                 height: "auto",
                 userSelect: "none",
                 pointerEvents: "none",
@@ -82,11 +84,11 @@ const Villain: React.FC<VillainProps> = ({ isGameOver, villainIndex, onPositionU
                 alt="Speech"
                 className="animate-float"
                 style={{
-                    width: "200px", // Adjust size as needed
+                    width: `${200 * scale}px`,
                     height: "auto",
-                    marginBottom: "-2px", // Overlap slightly if needed
+                    marginBottom: "-2px",
                     position: "relative",
-                    left: "-30px", // Move slightly left
+                    left: `${-30 * scale}px`,
                     animationPlayState: isGameOver ? 'paused' : 'running'
                 }}
             />
