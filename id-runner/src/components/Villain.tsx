@@ -36,7 +36,7 @@ const Villain: React.FC<VillainProps> = ({ isGameOver, villainIndex, onPositionU
     // Refs for physics loop
     const xRef = useRef(window.innerWidth);
     const requestRef = useRef<number>(0);
-    const speed = 7; // Movement speed (increased for difficulty)
+    const speed = 5; // Movement speed
 
     // Movement loop
     useEffect(() => {

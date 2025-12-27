@@ -26,7 +26,7 @@ const GoodGuy: React.FC<GoodGuyProps> = ({ isGameOver, isWin, isVisible, onPosit
     // Refs for physics loop
     const xRef = useRef(window.innerWidth);
     const requestRef = useRef<number>(0);
-    const speed = 7; // Same speed as villain (increased for difficulty)
+    const speed = 5; // Same speed as villain
 
     // Reset position when becoming visible
     useEffect(() => {

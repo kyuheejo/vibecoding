@@ -55,8 +55,8 @@ const RunnerCharacter: React.FC<RunnerProps> = ({ isGameOver, isHoldingEnter, on
     const [frameIndex, setFrameIndex] = useState(0);
     const [heartFrameIndex, setHeartFrameIndex] = useState(0);
 
-    // Physics constants (reduced jump for difficulty)
-    const JUMP_POWER = 18;
+    // Physics constants
+    const JUMP_POWER = 19;
     const GRAVITY = 0.8;
 
     // Refs for physics loop to avoid re-render dependency cycles
@@ -82,6 +82,7 @@ const RunnerCharacter: React.FC<RunnerProps> = ({ isGameOver, isHoldingEnter, on
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.code === "Space") {
+                e.preventDefault(); // Prevent page scroll
                 if (!isJumping) {
                     // First jump
                     setIsJumping(true);

@@ -13,7 +13,7 @@ const BackgroundInfinite: React.FC<BackgroundProps> = ({ isGameOver }) => {
         if (isGameOver) return;
 
         let animationFrameId: number;
-        const speed = 0.35; // Faster scroll for increased difficulty
+        const speed = 0.25; // Background scroll speed
 
         const animate = () => {
             positionRef.current -= speed;
@@ -36,7 +36,7 @@ const BackgroundInfinite: React.FC<BackgroundProps> = ({ isGameOver }) => {
     }, [isGameOver]);
 
     return (
-        <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
+        <div className="fixed inset-0 w-full h-full overflow-hidden z-0">
             <div
                 ref={containerRef}
                 className="flex w-[200%] h-full"

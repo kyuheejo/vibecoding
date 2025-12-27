@@ -9,8 +9,14 @@
     font-display: swap;
 }
 
-body {
+html, body {
     font-family: "SchoolSafetyManitto";
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    position: fixed;
+    width: 100%;
 }
 
 @keyframes scroll-bg {

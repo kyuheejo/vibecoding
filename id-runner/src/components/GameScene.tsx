@@ -52,6 +52,17 @@ const GameScene: React.FC = () => {
     const enterHoldIntervalRef = useRef<number | null>(null);
     const isGoodGuyVisibleRef = useRef(false);
 
+    // Prevent Space key from scrolling at all times
+    useEffect(() => {
+        const preventScroll = (e: KeyboardEvent) => {
+            if (e.code === "Space") {
+                e.preventDefault();
+            }
+        };
+        window.addEventListener("keydown", preventScroll);
+        return () => window.removeEventListener("keydown", preventScroll);
+    }, []);
+
     // Game Over Sound Effect & Music
     useEffect(() => {
         if (isGameOver) {
@@ -228,7 +239,7 @@ const GameScene: React.FC = () => {
                 // Update progress every 50ms
                 enterHoldIntervalRef.current = window.setInterval(() => {
                     const elapsed = Date.now() - (enterHoldStartTime.current || 0);
-                    const progress = Math.min((elapsed / 3000) * 100, 100);
+                    const progress = Math.min((elapsed / 3500) * 100, 100);
                     setEnterHoldProgress(progress);
 
                     if (progress >= 100) {
@@ -241,8 +252,14 @@ const GameScene: React.FC = () => {
                         }
 
                         if (isGoodGuyVisibleRef.current) {
-                            // Win if good guy is visible
-                            triggerWin();
+                            // Win only if good guy hasn't passed the runner yet
+                            // Runner right edge is around x=350, good guy must still be ahead
+                            if (goodGuyX.current > 0) {
+                                triggerWin();
+                            } else {
+                                // Good guy passed off screen - game over (missed opportunity)
+                                setIsGameOver(true);
+                            }
                         } else {
                             // Game over if villain is visible
                             setIsGameOver(true);
@@ -274,6 +291,18 @@ const GameScene: React.FC = () => {
             }
         };
     }, [isGameOver, isWin, isGoodGuyVisible]);
+
+    // Reset progress when good guy leaves (missed opportunity - game continues)
+    useEffect(() => {
+        if (!isGoodGuyVisible) {
+            enterHoldStartTime.current = null;
+            setEnterHoldProgress(0);
+            if (enterHoldIntervalRef.current) {
+                clearInterval(enterHoldIntervalRef.current);
+                enterHoldIntervalRef.current = null;
+            }
+        }
+    }, [isGoodGuyVisible]);
 
     const [paragraphIndex, setParagraphIndex] = useState(0);
 
@@ -325,8 +354,8 @@ const GameScene: React.FC = () => {
                     onPositionUpdate={(x) => villainX.current = x}
                     onVillainCycle={() => {
                         setVillainIndex((prev) => (prev + 1) % 7);
-                        // 20% chance to spawn good guy
-                        if (Math.random() < 0.2) {
+                        // 40% chance to spawn good guy
+                        if (Math.random() < 0.4) {
                             setIsGoodGuyVisible(true);
                         }
                     }}
