@@ -8,8 +8,7 @@ import v4 from "../assets/villain/4.png";
 import v5 from "../assets/villain/5.png";
 import v6 from "../assets/villain/6.png";
 import v7 from "../assets/villain/7.png";
-import v8 from "../assets/villain/8.png";
-import v9 from "../assets/villain/9.png";
+
 
 // Import speech bubble frames
 import s1 from "../assets/villain_speaks/1.png";
@@ -19,11 +18,10 @@ import s4 from "../assets/villain_speaks/4.png";
 import s5 from "../assets/villain_speaks/5.png";
 import s6 from "../assets/villain_speaks/6.png";
 import s7 from "../assets/villain_speaks/7.png";
-import s8 from "../assets/villain_speaks/8.png";
-import s9 from "../assets/villain_speaks/9.png";
 
-const frames = [v1, v2, v3, v4, v5, v6, v7, v8, v9];
-const speechFrames = [s1, s2, s3, s4, s5, s6, s7, s8, s9];
+
+const frames = [v1, v2, v3, v4, v5, v6, v7];
+const speechFrames = [s1, s2, s3, s4, s5, s6, s7];
 
 interface VillainProps {
     isGameOver: boolean;
@@ -38,7 +36,7 @@ const Villain: React.FC<VillainProps> = ({ isGameOver, villainIndex, onPositionU
     // Refs for physics loop
     const xRef = useRef(window.innerWidth);
     const requestRef = useRef<number>(0);
-    const speed = 4; // Movement speed
+    const speed = 7; // Movement speed (increased for difficulty)
 
     // Movement loop
     useEffect(() => {

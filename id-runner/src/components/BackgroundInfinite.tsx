@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import bg from "../assets/background/background.png";
 
 interface BackgroundProps {
@@ -6,12 +6,41 @@ interface BackgroundProps {
 }
 
 const BackgroundInfinite: React.FC<BackgroundProps> = ({ isGameOver }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const positionRef = useRef(0);
+
+    useEffect(() => {
+        if (isGameOver) return;
+
+        let animationFrameId: number;
+        const speed = 0.2; // ~4 seconds per cycle at 60fps
+
+        const animate = () => {
+            positionRef.current -= speed;
+
+            // Reset when we've scrolled 50% (one full image width)
+            if (positionRef.current <= -50) {
+                positionRef.current += 50;
+            }
+
+            if (containerRef.current) {
+                containerRef.current.style.transform = `translate3d(${positionRef.current}%, 0, 0)`;
+            }
+
+            animationFrameId = requestAnimationFrame(animate);
+        };
+
+        animationFrameId = requestAnimationFrame(animate);
+
+        return () => cancelAnimationFrame(animationFrameId);
+    }, [isGameOver]);
+
     return (
         <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
-            {/* Container for the sliding images */}
             <div
-                className={`flex w-[200%] h-full ${isGameOver ? '' : 'animate-scroll-bg'}`}
-                style={{ animationPlayState: isGameOver ? 'paused' : 'running' }}
+                ref={containerRef}
+                className="flex w-[200%] h-full"
+                style={{ willChange: 'transform' }}
             >
                 <img
                     src={bg}

@@ -25,7 +25,9 @@ body {
 
 .animate-scroll-bg {
     animation: scroll-bg 4s linear infinite;
-    /* Adjust 10s to change speed */
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 @keyframes float {
@@ -60,4 +62,41 @@ body {
     opacity: 0;
     /* Start hidden */
     animation: fade-up 0.8s ease-out forwards;
+}
+
+/* Heart flying animation */
+@keyframes heart-fly {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(calc(var(--target-x) * 0.5), calc(var(--target-y) * 0.5 - 30px)) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--target-x), var(--target-y)) scale(1);
+    }
+}
+
+.heart-fly {
+    animation: heart-fly 1.5s ease-out forwards;
+}
+
+/* Confetti animation */
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0.7;
+    }
+}
+
+.confetti-piece {
+    animation: confetti-fall 3s ease-in-out infinite;
+    border-radius: 2px;
 }

@@ -2,11 +2,15 @@ import React, { useEffect, useState, useRef } from "react";
 import RunnerCharacter from "./RunnerCharacter";
 import BackgroundInfinite from "./BackgroundInfinite";
 import Villain from "./Villain";
+import GoodGuy from "./GoodGuy";
+import Confetti from "./Confetti";
 import bgm1 from "../assets/music/Tulip.mp3";
 import bgm2 from "../assets/music/summer end.mp3";
 import gameOverImg from "../assets/game_over/game_over.gif";
 import gameOverSound from "../assets/game_over/game_over_sound.mp3";
 import gameOverMusic from "../assets/game_over/game_over_music.mp3";
+import winImg from "../assets/win/win.jpg";
+import winMusic from "../assets/win/win.mp3";
 
 import ending1 from "../ending/1.txt?raw";
 import ending2 from "../ending/2.txt?raw";
@@ -18,6 +22,9 @@ import ending7 from "../ending/7.txt?raw";
 
 const GameScene: React.FC = () => {
     const [isGameOver, setIsGameOver] = useState(false);
+    const [isWin, setIsWin] = useState(false);
+    const [isGoodGuyVisible, setIsGoodGuyVisible] = useState(false);
+    const [enterHoldProgress, setEnterHoldProgress] = useState(0);
     const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
     const [resetKey, setResetKey] = useState(0); // Key to force re-mount on restart
     const [villainIndex, setVillainIndex] = useState(0); // Track current villain
@@ -40,6 +47,10 @@ const GameScene: React.FC = () => {
     // Refs to track positions for collision detection without re-renders
     const runnerY = useRef(0);
     const villainX = useRef(window.innerWidth);
+    const goodGuyX = useRef(window.innerWidth);
+    const enterHoldStartTime = useRef<number | null>(null);
+    const enterHoldIntervalRef = useRef<number | null>(null);
+    const isGoodGuyVisibleRef = useRef(false);
 
     // Game Over Sound Effect & Music
     useEffect(() => {
@@ -61,9 +72,24 @@ const GameScene: React.FC = () => {
         }
     }, [isGameOver]);
 
+    // Win Music
+    useEffect(() => {
+        if (isWin) {
+            const music = new Audio(winMusic);
+            music.volume = 0.6;
+            music.loop = true;
+            music.play().catch(e => console.log("Win music blocked", e));
+
+            return () => {
+                music.pause();
+                music.currentTime = 0;
+            };
+        }
+    }, [isWin]);
+
     // Background Music Control
     useEffect(() => {
-        if (isGameOver) return;
+        if (isGameOver || isWin) return;
 
         const audio = new Audio(playlist[currentTrackIndex]);
         audio.volume = 0.5;
@@ -99,51 +125,73 @@ const GameScene: React.FC = () => {
             window.removeEventListener('click', handleInteraction);
             window.removeEventListener('keydown', handleInteraction);
         };
-    }, [currentTrackIndex, isGameOver]);
+    }, [currentTrackIndex, isGameOver, isWin]);
 
-    // Restart Listener
+    // Restart Listener (with delay to prevent accidental restart from held Enter)
     useEffect(() => {
-        if (!isGameOver) return;
+        if (!isGameOver && !isWin) return;
+
+        let canRestart = false;
+
+        // Wait 1 second before allowing restart (prevents held Enter from triggering)
+        const delayTimer = setTimeout(() => {
+            canRestart = true;
+        }, 1000);
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && canRestart) {
                 setIsGameOver(false);
+                setIsWin(false);
+                setIsGoodGuyVisible(false);
+                setEnterHoldProgress(0);
                 setResetKey(prev => prev + 1); // Force re-mount
                 setVillainIndex(0); // Reset villain
 
                 // Reset refs
                 runnerY.current = 0;
                 villainX.current = window.innerWidth;
+                goodGuyX.current = window.innerWidth;
+                enterHoldStartTime.current = null;
+                if (enterHoldIntervalRef.current) {
+                    clearInterval(enterHoldIntervalRef.current);
+                    enterHoldIntervalRef.current = null;
+                }
             }
         };
 
         window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isGameOver]);
+        return () => {
+            clearTimeout(delayTimer);
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [isGameOver, isWin]);
 
-    // Collision Detection Loop
+    // Collision Detection Loop (only check villain collision when good guy not visible)
     useEffect(() => {
-        if (isGameOver) return;
+        if (isGameOver || isWin) return;
 
         let animationFrameId: number;
 
         const checkCollision = () => {
-            // Hitbox definitions (tuned for gameplay feel)
-            const runnerLeft = 50 + 80; // Offset to center
-            const runnerRight = 50 + 300 - 80;
-            const runnerBottom = 200 + runnerY.current;
+            // Skip collision check when good guy is visible
+            if (!isGoodGuyVisible) {
+                // Hitbox definitions (tuned for gameplay feel)
+                const runnerLeft = 50 + 80; // Offset to center
+                const runnerRight = 50 + 300 - 80;
+                const runnerBottom = 200 + runnerY.current;
 
-            const villainLeft = villainX.current + 80;
-            const villainRight = villainX.current + 300 - 80;
-            const villainTop = 170 + 200; // Approx height
+                const villainLeft = villainX.current + 80;
+                const villainRight = villainX.current + 300 - 80;
+                const villainTop = 170 + 200; // Approx height
 
-            // Check overlap
-            if (
-                runnerRight > villainLeft &&
-                runnerLeft < villainRight &&
-                runnerBottom < villainTop
-            ) {
-                setIsGameOver(true);
+                // Check overlap
+                if (
+                    runnerRight > villainLeft &&
+                    runnerLeft < villainRight &&
+                    runnerBottom < villainTop
+                ) {
+                    setIsGameOver(true);
+                }
             }
 
             animationFrameId = requestAnimationFrame(checkCollision);
@@ -151,7 +199,81 @@ const GameScene: React.FC = () => {
 
         checkCollision();
         return () => cancelAnimationFrame(animationFrameId);
-    }, [isGameOver]);
+    }, [isGameOver, isWin, isGoodGuyVisible]);
+
+    // Keep ref in sync with state for use in interval callback
+    useEffect(() => {
+        isGoodGuyVisibleRef.current = isGoodGuyVisible;
+    }, [isGoodGuyVisible]);
+
+    // Trigger win function
+    const triggerWin = () => {
+        setIsWin(true);
+        // Clear the enter hold interval
+        if (enterHoldIntervalRef.current) {
+            clearInterval(enterHoldIntervalRef.current);
+            enterHoldIntervalRef.current = null;
+        }
+        enterHoldStartTime.current = null;
+    };
+
+    // Enter hold detection for both good guy and villain
+    useEffect(() => {
+        if (isGameOver || isWin) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Enter" && !enterHoldStartTime.current) {
+                enterHoldStartTime.current = Date.now();
+
+                // Update progress every 50ms
+                enterHoldIntervalRef.current = window.setInterval(() => {
+                    const elapsed = Date.now() - (enterHoldStartTime.current || 0);
+                    const progress = Math.min((elapsed / 3000) * 100, 100);
+                    setEnterHoldProgress(progress);
+
+                    if (progress >= 100) {
+                        // Clear interval first
+                        enterHoldStartTime.current = null;
+                        setEnterHoldProgress(0);
+                        if (enterHoldIntervalRef.current) {
+                            clearInterval(enterHoldIntervalRef.current);
+                            enterHoldIntervalRef.current = null;
+                        }
+
+                        if (isGoodGuyVisibleRef.current) {
+                            // Win if good guy is visible
+                            triggerWin();
+                        } else {
+                            // Game over if villain is visible
+                            setIsGameOver(true);
+                        }
+                    }
+                }, 50);
+            }
+        };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.key === "Enter") {
+                enterHoldStartTime.current = null;
+                setEnterHoldProgress(0);
+                if (enterHoldIntervalRef.current) {
+                    clearInterval(enterHoldIntervalRef.current);
+                    enterHoldIntervalRef.current = null;
+                }
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keyup", handleKeyUp);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("keyup", handleKeyUp);
+            if (enterHoldIntervalRef.current) {
+                clearInterval(enterHoldIntervalRef.current);
+            }
+        };
+    }, [isGameOver, isWin, isGoodGuyVisible]);
 
     const [paragraphIndex, setParagraphIndex] = useState(0);
 
@@ -188,19 +310,114 @@ const GameScene: React.FC = () => {
 
     return (
         <div style={{ position: "relative", width: "100%", height: "100vh" }}>
-            <BackgroundInfinite key={`bg-${resetKey}`} isGameOver={isGameOver} />
+            <BackgroundInfinite key={`bg-${resetKey}`} isGameOver={isGameOver || isWin} />
             <RunnerCharacter
                 key={`runner-${resetKey}`}
-                isGameOver={isGameOver}
+                isGameOver={isGameOver || isWin}
+                isHoldingEnter={enterHoldProgress > 0}
                 onPositionUpdate={(y) => runnerY.current = y}
             />
-            <Villain
-                key={`villain-${resetKey}`}
+            {!isGoodGuyVisible && (
+                <Villain
+                    key={`villain-${resetKey}`}
+                    isGameOver={isGameOver || isWin}
+                    villainIndex={villainIndex}
+                    onPositionUpdate={(x) => villainX.current = x}
+                    onVillainCycle={() => {
+                        setVillainIndex((prev) => (prev + 1) % 7);
+                        // 20% chance to spawn good guy
+                        if (Math.random() < 0.2) {
+                            setIsGoodGuyVisible(true);
+                        }
+                    }}
+                />
+            )}
+
+            <GoodGuy
+                key={`goodguy-${resetKey}`}
                 isGameOver={isGameOver}
-                villainIndex={villainIndex}
-                onPositionUpdate={(x) => villainX.current = x}
-                onVillainCycle={() => setVillainIndex((prev) => (prev + 1) % 9)} // Assuming 7 villains
+                isWin={isWin}
+                isVisible={isGoodGuyVisible}
+                onPositionUpdate={(x) => goodGuyX.current = x}
+                onGoodGuyCycle={() => setIsGoodGuyVisible(false)}
             />
+
+            {/* Enter Hold Progress Bar */}
+            {enterHoldProgress > 0 && !isWin && !isGameOver && (
+                <div style={{
+                    position: 'fixed',
+                    top: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '600px',
+                    height: '40px',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    zIndex: 1000,
+                    border: '3px solid white'
+                }}>
+                    <div style={{
+                        width: `${enterHoldProgress}%`,
+                        height: '100%',
+                        backgroundColor: '#ff69b4',
+                        transition: 'width 0.05s linear'
+                    }} />
+                    <span style={{
+                        position: 'absolute',
+                        top: 0,
+                        width: '100%',
+                        textAlign: 'center',
+                        color: 'white',
+                        fontSize: '24px',
+                        lineHeight: '40px'
+                    }}>
+                        Enter 를 눌러서 너나자를 쏘세요...
+                        ❤️
+                    </span>
+                </div>
+            )}
+
+            {/* Win Overlay */}
+            {isWin && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(255, 192, 203, 0.85)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999
+                    }}
+                >
+                    <Confetti />
+                    <img
+                        src={winImg}
+                        alt="You Win!"
+                        className="w-1/3 h-auto drop-shadow-2xl animate-float rounded-lg"
+                    />
+                    <p
+                        className="text-white text-3xl mt-8 font-bold"
+                        style={{
+                            color: '#ff1493',
+                            textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                        }}
+                    >
+                        김이드는 좋남과 결혼하여 평생 부양 받으며 살았답니다..❤️
+                    </p>
+                    <p
+                        className="text-white text-2xl mt-4 font-bold animate-pulse"
+                        style={{ color: 'white' }}
+                    >
+                        Press Enter to Play Again
+                    </p>
+                </div>
+            )}
 
             {/* Game Over Overlay */}
             {isGameOver && (
