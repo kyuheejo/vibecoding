@@ -23,6 +23,7 @@ import ending7 from "../ending/7.txt?raw";
 
 const GameScene: React.FC = () => {
     const { isMobile, scale, baseBottom } = useMobile();
+    const [gameStarted, setGameStarted] = useState(false); // Intro screen control
     const [isGameOver, setIsGameOver] = useState(false);
     const [isWin, setIsWin] = useState(false);
     const [isGoodGuyVisible, setIsGoodGuyVisible] = useState(false);
@@ -77,6 +78,30 @@ const GameScene: React.FC = () => {
         return () => window.removeEventListener("keydown", preventScroll);
     }, []);
 
+    // Intro screen start listener
+    useEffect(() => {
+        if (gameStarted) return;
+
+        const handleStart = (e: KeyboardEvent) => {
+            if (e.key === "Enter") {
+                setGameStarted(true);
+            }
+        };
+
+        const handleTouchStart = (e: TouchEvent) => {
+            e.preventDefault();
+            setGameStarted(true);
+        };
+
+        window.addEventListener("keydown", handleStart);
+        window.addEventListener("touchstart", handleTouchStart, { passive: false });
+
+        return () => {
+            window.removeEventListener("keydown", handleStart);
+            window.removeEventListener("touchstart", handleTouchStart);
+        };
+    }, [gameStarted]);
+
     // Game Over Sound Effect & Music
     useEffect(() => {
         if (isGameOver) {
@@ -114,7 +139,7 @@ const GameScene: React.FC = () => {
         }
     }, [isWin]);
 
-    // Background Music Control
+    // Background Music Control (plays on intro screen too)
     useEffect(() => {
         if (isGameOver || isWin) return;
 
@@ -217,7 +242,7 @@ const GameScene: React.FC = () => {
         };
     }, [isGameOver, isWin]);
 
-    // Collision Detection Loop
+    // Collision Detection Loop (runs regardless of gameStarted since villains don't spawn during intro)
     useEffect(() => {
         if (isGameOver || isWin) return;
 
@@ -301,7 +326,7 @@ const GameScene: React.FC = () => {
 
     // Enter hold detection for both good guy and villain
     useEffect(() => {
-        if (isGameOver || isWin) return;
+        if (!gameStarted || isGameOver || isWin) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Enter" && !enterHoldStartTime.current) {
@@ -377,7 +402,7 @@ const GameScene: React.FC = () => {
 
     // Touch controls: tap to jump, hold to send heart
     useEffect(() => {
-        if (isGameOver || isWin) return;
+        if (!gameStarted || isGameOver || isWin) return;
 
         const handleTouchStart = (e: TouchEvent) => {
             e.preventDefault();
@@ -483,17 +508,19 @@ const GameScene: React.FC = () => {
         return currentParagraph.split('\n');
     };
 
+    const isPaused = !gameStarted || isGameOver || isWin;
+
     return (
         <div style={{ position: "relative", width: "100%", height: "100vh" }}>
-            <BackgroundInfinite key={`bg-${resetKey}`} isGameOver={isGameOver || isWin} />
+            <BackgroundInfinite key={`bg-${resetKey}`} isGameOver={isPaused} />
             <RunnerCharacter
                 key={`runner-${resetKey}`}
-                isGameOver={isGameOver || isWin}
+                isGameOver={isPaused}
                 isHoldingEnter={enterHoldProgress > 0}
                 onPositionUpdate={(y) => runnerY.current = y}
                 onRegisterJump={(fn) => triggerJumpRef.current = fn}
             />
-            {!isGoodGuyVisible && (
+            {!isGoodGuyVisible && gameStarted && (
                 <Villain
                     key={`villain-${resetKey}`}
                     isGameOver={isGameOver || isWin}
@@ -513,7 +540,7 @@ const GameScene: React.FC = () => {
                 key={`goodguy-${resetKey}`}
                 isGameOver={isGameOver}
                 isWin={isWin}
-                isVisible={isGoodGuyVisible}
+                isVisible={isGoodGuyVisible && gameStarted}
                 onPositionUpdate={(x) => goodGuyX.current = x}
                 onGoodGuyCycle={() => setIsGoodGuyVisible(false)}
             />
@@ -574,6 +601,135 @@ const GameScene: React.FC = () => {
                     }}>
                         망설이는 사이 좋남을 놓쳤어요! 💔
                     </span>
+                </div>
+            )}
+
+            {/* Intro Screen Overlay */}
+            {!gameStarted && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'linear-gradient(180deg, rgba(255,182,193,0.95) 0%, rgba(255,105,180,0.9) 100%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: isMobile ? '20px' : '40px'
+                    }}
+                >
+                    {/* Game Title */}
+                    <h1
+                        className="animate-float"
+                        style={{
+                            fontSize: isMobile ? '24px' : '48px',
+                            fontWeight: 'bold',
+                            color: '#fff',
+                            textShadow: '3px 3px 6px rgba(0,0,0,0.3), -1px -1px 0 #ff1493',
+                            marginBottom: isMobile ? '20px' : '40px',
+                            textAlign: 'center'
+                        }}
+                    >
+                        이드녀의 남편감 찾기 대작전!
+                    </h1>
+
+                    {/* Instructions Box */}
+                    <div
+                        style={{
+                            backgroundColor: 'rgba(255,255,255,0.95)',
+                            borderRadius: '20px',
+                            padding: isMobile ? '20px' : '40px',
+                            maxWidth: isMobile ? '90%' : '600px',
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                            border: '3px solid #ff69b4'
+                        }}
+                    >
+                        <h2
+                            style={{
+                                fontSize: isMobile ? '16px' : '24px',
+                                color: '#ff1493',
+                                marginBottom: isMobile ? '15px' : '25px',
+                                textAlign: 'center',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            게임 방법
+                        </h2>
+
+                        {/* Jump instruction */}
+                        <div style={{ marginBottom: isMobile ? '12px' : '20px' }}>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: isMobile ? '10px' : '15px',
+                                marginBottom: '8px'
+                            }}>
+                                <span style={{
+                                    backgroundColor: '#ff69b4',
+                                    color: 'white',
+                                    padding: isMobile ? '4px 10px' : '8px 16px',
+                                    borderRadius: '8px',
+                                    fontSize: isMobile ? '12px' : '18px',
+                                    fontWeight: 'bold',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    {isMobile ? '탭' : '스페이스바'}
+                                </span>
+                                <span style={{
+                                    fontSize: isMobile ? '14px' : '20px',
+                                    color: '#333'
+                                }}>
+                                    점프로 나남을 피하세요!
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Heart instruction */}
+                        <div>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: isMobile ? '10px' : '15px',
+                                marginBottom: '8px'
+                            }}>
+                                <span style={{
+                                    backgroundColor: '#ff1493',
+                                    color: 'white',
+                                    padding: isMobile ? '4px 10px' : '8px 16px',
+                                    borderRadius: '8px',
+                                    fontSize: isMobile ? '12px' : '18px',
+                                    fontWeight: 'bold',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    {isMobile ? '꾹 누르기' : 'Enter 누르기'}
+                                </span>
+                                <span style={{
+                                    fontSize: isMobile ? '14px' : '20px',
+                                    color: '#333'
+                                }}>
+                                    너나자로 좋남을 꼬시세요!
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Start prompt */}
+                    <p
+                        className="animate-pulse"
+                        style={{
+                            marginTop: isMobile ? '25px' : '50px',
+                            fontSize: isMobile ? '18px' : '28px',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                        }}
+                    >
+                        {isMobile ? '화면을 탭해서 시작!' : 'Enter 를 눌러 시작!'}
+                    </p>
                 </div>
             )}
 
