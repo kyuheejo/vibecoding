@@ -1,4 +1,3 @@
-import React from "react";
 import GameScene from "./components/GameScene";
 
 function App() {
