@@ -265,7 +265,7 @@ const GameScene: React.FC = () => {
                 // Update progress every 50ms
                 enterHoldIntervalRef.current = window.setInterval(() => {
                     const elapsed = Date.now() - (enterHoldStartTime.current || 0);
-                    const progress = Math.min((elapsed / 3200) * 100, 100);
+                    const progress = Math.min((elapsed / 3000) * 100, 100);
                     setEnterHoldProgress(progress);
                     enterHoldProgressRef.current = progress; // Sync ref for collision detection
 
@@ -427,8 +427,7 @@ const GameScene: React.FC = () => {
                         fontSize: '24px',
                         lineHeight: '40px'
                     }}>
-                        Enter 를 눌러서 너나자를 쏘세요...
-                        ❤️
+                        ❤️ Enter 를 눌러서 3초간 너나자를 쏘세요! ❤️
                     </span>
                 </div>
             )}
