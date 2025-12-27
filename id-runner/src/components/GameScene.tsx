@@ -54,6 +54,11 @@ const GameScene: React.FC = () => {
     const enterHoldProgressRef = useRef(0); // Track progress for collision check
     const goodGuyCollisionProcessed = useRef(false); // Track if we already checked collision
 
+    // Touch handling refs
+    const touchStartTime = useRef<number | null>(null);
+    const touchHoldTimeout = useRef<number | null>(null);
+    const triggerJumpRef = useRef<() => void>(() => {});
+
     // Prevent Space key from scrolling at all times
     useEffect(() => {
         const preventScroll = (e: KeyboardEvent) => {
@@ -140,42 +145,55 @@ const GameScene: React.FC = () => {
         };
     }, [currentTrackIndex, isGameOver, isWin]);
 
-    // Restart Listener (with delay to prevent accidental restart from held Enter)
+    // Restart Listener (with delay to prevent accidental restart from held Enter/touch)
     useEffect(() => {
         if (!isGameOver && !isWin) return;
 
         let canRestart = false;
 
-        // Wait 1 second before allowing restart (prevents held Enter from triggering)
+        // Wait 1 second before allowing restart (prevents held Enter/touch from triggering)
         const delayTimer = setTimeout(() => {
             canRestart = true;
         }, 1000);
 
+        const doRestart = () => {
+            setIsGameOver(false);
+            setIsWin(false);
+            setIsGoodGuyVisible(false);
+            setEnterHoldProgress(0);
+            setResetKey(prev => prev + 1); // Force re-mount
+            setVillainIndex(0); // Reset villain
+
+            // Reset refs
+            runnerY.current = 0;
+            villainX.current = window.innerWidth;
+            goodGuyX.current = window.innerWidth;
+            enterHoldStartTime.current = null;
+            if (enterHoldIntervalRef.current) {
+                clearInterval(enterHoldIntervalRef.current);
+                enterHoldIntervalRef.current = null;
+            }
+        };
+
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Enter" && canRestart) {
-                setIsGameOver(false);
-                setIsWin(false);
-                setIsGoodGuyVisible(false);
-                setEnterHoldProgress(0);
-                setResetKey(prev => prev + 1); // Force re-mount
-                setVillainIndex(0); // Reset villain
+                doRestart();
+            }
+        };
 
-                // Reset refs
-                runnerY.current = 0;
-                villainX.current = window.innerWidth;
-                goodGuyX.current = window.innerWidth;
-                enterHoldStartTime.current = null;
-                if (enterHoldIntervalRef.current) {
-                    clearInterval(enterHoldIntervalRef.current);
-                    enterHoldIntervalRef.current = null;
-                }
+        const handleTouchStart = (e: TouchEvent) => {
+            if (canRestart) {
+                e.preventDefault();
+                doRestart();
             }
         };
 
         window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("touchstart", handleTouchStart, { passive: false });
         return () => {
             clearTimeout(delayTimer);
             window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("touchstart", handleTouchStart);
         };
     }, [isGameOver, isWin]);
 
@@ -330,6 +348,81 @@ const GameScene: React.FC = () => {
         }
     }, [isGoodGuyVisible]);
 
+    // Touch controls: tap to jump, hold to send heart
+    useEffect(() => {
+        if (isGameOver || isWin) return;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            e.preventDefault();
+            touchStartTime.current = Date.now();
+
+            // After 250ms, start the heart hold progress (like holding Enter)
+            touchHoldTimeout.current = window.setTimeout(() => {
+                enterHoldStartTime.current = Date.now();
+                enterHoldIntervalRef.current = window.setInterval(() => {
+                    const elapsed = Date.now() - (enterHoldStartTime.current || 0);
+                    const progress = Math.min((elapsed / 3000) * 100, 100);
+                    setEnterHoldProgress(progress);
+                    enterHoldProgressRef.current = progress;
+
+                    if (progress >= 100) {
+                        enterHoldStartTime.current = null;
+                        setEnterHoldProgress(0);
+                        enterHoldProgressRef.current = 0;
+                        if (enterHoldIntervalRef.current) {
+                            clearInterval(enterHoldIntervalRef.current);
+                            enterHoldIntervalRef.current = null;
+                        }
+
+                        if (isGoodGuyVisibleRef.current) {
+                            if (!goodGuyCollisionProcessed.current) {
+                                triggerWin();
+                            }
+                        } else {
+                            setIsGameOver(true);
+                        }
+                    }
+                }, 50);
+            }, 250);
+        };
+
+        const handleTouchEnd = () => {
+            const touchDuration = Date.now() - (touchStartTime.current || 0);
+
+            // Clear hold timeout
+            if (touchHoldTimeout.current) {
+                clearTimeout(touchHoldTimeout.current);
+                touchHoldTimeout.current = null;
+            }
+
+            // Quick tap = jump
+            if (touchDuration < 250) {
+                triggerJumpRef.current();
+            }
+
+            // Reset hold progress
+            enterHoldStartTime.current = null;
+            setEnterHoldProgress(0);
+            enterHoldProgressRef.current = 0;
+            if (enterHoldIntervalRef.current) {
+                clearInterval(enterHoldIntervalRef.current);
+                enterHoldIntervalRef.current = null;
+            }
+            touchStartTime.current = null;
+        };
+
+        window.addEventListener("touchstart", handleTouchStart, { passive: false });
+        window.addEventListener("touchend", handleTouchEnd);
+
+        return () => {
+            window.removeEventListener("touchstart", handleTouchStart);
+            window.removeEventListener("touchend", handleTouchEnd);
+            if (touchHoldTimeout.current) {
+                clearTimeout(touchHoldTimeout.current);
+            }
+        };
+    }, [isGameOver, isWin]);
+
     const [paragraphIndex, setParagraphIndex] = useState(0);
 
     // Reset paragraph index when game over starts
@@ -371,6 +464,7 @@ const GameScene: React.FC = () => {
                 isGameOver={isGameOver || isWin}
                 isHoldingEnter={enterHoldProgress > 0}
                 onPositionUpdate={(y) => runnerY.current = y}
+                onRegisterJump={(fn) => triggerJumpRef.current = fn}
             />
             {!isGoodGuyVisible && (
                 <Villain
@@ -427,7 +521,7 @@ const GameScene: React.FC = () => {
                         fontSize: '24px',
                         lineHeight: '40px'
                     }}>
-                        ❤️ Enter 를 눌러서 3초간 너나자를 쏘세요! ❤️
+                        Enter 를 눌러 3초간 너나자를 쏘세요! ❤️
                     </span>
                 </div>
             )}

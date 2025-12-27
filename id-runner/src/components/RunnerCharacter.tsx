@@ -46,9 +46,10 @@ interface RunnerProps {
     isGameOver: boolean;
     isHoldingEnter: boolean;
     onPositionUpdate: (y: number) => void;
+    onRegisterJump?: (jumpFn: () => void) => void;
 }
 
-const RunnerCharacter: React.FC<RunnerProps> = ({ isGameOver, isHoldingEnter, onPositionUpdate }) => {
+const RunnerCharacter: React.FC<RunnerProps> = ({ isGameOver, isHoldingEnter, onPositionUpdate, onRegisterJump }) => {
     // 점프 상태
     const [isJumping, setIsJumping] = useState(false);
     const [y, setY] = useState(0);
@@ -64,6 +65,32 @@ const RunnerCharacter: React.FC<RunnerProps> = ({ isGameOver, isHoldingEnter, on
     const velRef = useRef(0);
     const requestRef = useRef<number>(0);
     const jumpCountRef = useRef(0); // Track number of jumps
+    const isJumpingRef = useRef(false); // For touch callback access
+
+    // Keep isJumpingRef in sync
+    useEffect(() => {
+        isJumpingRef.current = isJumping;
+    }, [isJumping]);
+
+    // Jump trigger function for touch controls
+    const triggerJump = () => {
+        if (isGameOver) return;
+        if (!isJumpingRef.current) {
+            setIsJumping(true);
+            velRef.current = JUMP_POWER;
+            jumpCountRef.current = 1;
+        } else if (jumpCountRef.current < 2) {
+            velRef.current = JUMP_POWER * 0.9;
+            jumpCountRef.current += 1;
+        }
+    };
+
+    // Register jump function with parent
+    useEffect(() => {
+        if (onRegisterJump) {
+            onRegisterJump(triggerJump);
+        }
+    }, [onRegisterJump]);
 
     // 러닝 애니메이션 (프레임 순환)
     useEffect(() => {
