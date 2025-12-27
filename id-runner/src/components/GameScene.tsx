@@ -253,13 +253,10 @@ const GameScene: React.FC = () => {
 
                         if (isGoodGuyVisibleRef.current) {
                             // Win only if good guy hasn't passed the runner yet
-                            // Runner right edge is around x=350, good guy must still be ahead
                             if (goodGuyX.current > 0) {
                                 triggerWin();
-                            } else {
-                                // Good guy passed off screen - game over (missed opportunity)
-                                setIsGameOver(true);
                             }
+                            // If good guy already passed, just do nothing - game continues
                         } else {
                             // Game over if villain is visible
                             setIsGameOver(true);
