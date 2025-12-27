@@ -622,6 +622,15 @@ const GameScene: React.FC = () => {
 
                 </div>
             )}
+
+            {/* Rotate phone overlay for portrait mode */}
+            <div className="rotate-phone-overlay">
+                <div style={{ fontSize: '48px', marginBottom: '20px' }}>📱</div>
+                <div>화면을 가로로 돌려주세요!</div>
+                <div style={{ fontSize: '16px', marginTop: '10px', opacity: 0.7 }}>
+                    Please rotate your phone to landscape
+                </div>
+            </div>
         </div>
     );
 };
